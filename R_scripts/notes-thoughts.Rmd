@@ -1,0 +1,114 @@
+---
+title: "Notes"
+author: "Trenton Pulsipher"
+date: "9/20/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+
+raw <- read_csv("~/Documents/Development/R/data/missionaryInterview/KI_17SEP2018.csv") %>%
+  as.tibble()
+```
+
+## Observations/Thoughts
+
+#### Mission President Effect
+
+
+###### New Investigators
+
+Clearly a mission president effect is observed, note the color changes and regression lines by mission president for each mission.
+
+```{r missionPresEffect1, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+raw %>% 
+   mutate(Date = mdy(week_mon_sun_end_date),
+          YoungMissionaries = elders + sisters,
+          TotalMissionaries = elders + sisters + seniors) %>%
+   ggplot(aes(x = Date, y = ni_reported, colour = mission_president)) +
+     geom_point(alpha = .25) +
+     geom_smooth(method = "lm", se = F) +
+     theme_bw() +
+     facet_wrap(~ mission_name, scales = "free_y") +
+     theme(legend.position = "none") +
+     labs(x = "", 
+          y = "New Investigators Reported", 
+          title = "Weekly Number of New Investigators by Mission")
+```
+
+However we should confirm that the mission president effect isn't overly influenced/confounded by the number of missionaries. The plot below confirms that the mission president has a potentially strong effect on the number of new investigators within a mission.
+
+```{r missionPresEffect2, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+raw %>% 
+   mutate(Date = mdy(week_mon_sun_end_date),
+          YoungMissionaries = elders + sisters,
+          TotalMissionaries = elders + sisters + seniors, 
+          ni_reported_numMiss = ni_reported / TotalMissionaries) %>%
+   ggplot(aes(x = Date, y = ni_reported_numMiss, colour = mission_president)) +
+     geom_point(alpha = .25) +
+    geom_smooth(method = "lm", se = F) +
+     theme_bw() +
+     facet_wrap(~ mission_name, scales = "free_y") +
+     theme(legend.position = "none") +
+     labs(x = "", 
+          y = "New Investigators Reported per Missionary", 
+          title = "Weekly Number of New Investigators per Missionary by Mission")
+```
+
+
+###### Baptisms/Confirmations
+
+Again a mission president effect is observed.
+
+```{r missionPresEffect3, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+raw %>% 
+   mutate(Date = mdy(week_mon_sun_end_date),
+          YoungMissionaries = elders + sisters,
+          TotalMissionaries = elders + sisters + seniors, 
+          bc_reported_numMiss = bc_reported / TotalMissionaries) %>%
+   ggplot(aes(x = Date, y = bc_reported_numMiss, colour = mission_president)) +
+     geom_point(alpha = .25) +
+    geom_smooth(method = "lm", se = F) +
+     theme_bw() +
+     facet_wrap(~ mission_name, scales = "free_y") +
+     theme(legend.position = "none") +
+     labs(x = "", 
+          y = "Baptisms/Confirmations Reported per Missionary", 
+          title = "Weekly Number of Baptisms/Confirmations per Missionary by Mission")
+```
+
+
+#### Data Cleaning/Correcting Opportunities
+
+###### Potential Outliers 
+
+Outliers are possible and we would want to be careful about their effect on predictions/goals. NOTE THE OUTLIERS HERE
+
+```{r outliers1, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+raw %>% 
+  mutate(Date = mdy(week_mon_sun_end_date),
+        YoungMissionaries = elders + sisters,
+        TotalMissionaries = elders + sisters + seniors) %>%
+  group_by(mission_name, mission_president, Date) %>%
+  select(contains("reported")) %>%
+  rename(`New Investigators` = ni_reported,
+         `Sacrament Attendance` = sa_reported,
+         `Baptism Date Set` = bd_reported,
+         `Baptism/Confirmation` = bc_reported) %>%
+  gather("metric", "value", `New Investigators`, `Sacrament Attendance`, `Baptism Date Set`, `Baptism/Confirmation`) %>%
+  ggplot(aes(x = Date, y = value, group = mission_name)) +
+    geom_line() +
+    geom_smooth(method = "loess") +
+    theme_bw() +
+    facet_grid(metric ~ mission_name, scales = "free_y") +
+    theme(legend.position = "none") +
+    labs(x = "", y = "")
+```
+
+
+
+Quote from *Preach My Gospel* about goals and how that influenced my suggestions regarding mission goals
+
+Incorporate a machine learning model or time-series model for prediction.
