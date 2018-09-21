@@ -8,6 +8,8 @@ output: html_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(lubridate)
+library(trelliscopejs)
+library(rbokeh)
 
 raw <- read_csv("~/Documents/Development/R/data/missionaryInterview/KI_17SEP2018.csv") %>%
   as.tibble()
@@ -18,7 +20,7 @@ raw <- read_csv("~/Documents/Development/R/data/missionaryInterview/KI_17SEP2018
 #### Mission President Effect
 
 
-###### New Investigators
+##### New Investigators
 
 Clearly a mission president effect is observed, note the color changes and regression lines by mission president for each mission.
 
@@ -58,7 +60,7 @@ raw %>%
 ```
 
 
-###### Baptisms/Confirmations
+##### Baptisms/Confirmations
 
 Again a mission president effect is observed.
 
@@ -79,12 +81,37 @@ raw %>%
           title = "Weekly Number of Baptisms/Confirmations per Missionary by Mission")
 ```
 
+##### Sacrament Meeting Attendance
+
+While I was skeptical of any mission president effect on sacrament meeting attendance it appears such an effect is real.
+
+```{r missionPresEffect4, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+raw %>% 
+   mutate(Date = mdy(week_mon_sun_end_date),
+          YoungMissionaries = elders + sisters,
+          TotalMissionaries = elders + sisters + seniors, 
+          sa_reported_numMiss = sa_reported / TotalMissionaries) %>%
+   ggplot(aes(x = Date, y = sa_reported_numMiss, colour = mission_president)) +
+     geom_point(alpha = .25) +
+    geom_smooth(method = "lm", se = F) +
+     theme_bw() +
+     facet_wrap(~ mission_name, scales = "free_y") +
+     theme(legend.position = "none") +
+     labs(x = "", 
+          y = "Sacrament Meeting Attendance Reported per Missionary", 
+          title = "Weekly Sacrament Meeting Attendance per Missionary by Mission")
+```
 
 #### Data Cleaning/Correcting Opportunities
 
-###### Potential Outliers 
+##### Potential Outliers 
 
-Outliers are possible and we would want to be careful about their effect on predictions/goals. NOTE THE OUTLIERS HERE
+Outliers are possible and we would want to be careful about their effect on predictions/goals. Outliers I noticed include:
+
+- Mission Q has one week where Baptisms/Confirmations spike to 75 when the next highest week was 16. (Maybe the 75 is supposed to be 15?) Because this field can be verified (compare MSR's number to any self-reported numbers) I would hesitate to change it here.
+- Mission K has an abnormal spike in New Investigators (1137 on 2010-02-11, note the next highest week was 428). This may be real, but if concerned about it's effect on modeling or otherwise I would consider replacing it with the mean or the previous week's value.
+- Mission J recorded one week where sacrament meeting attendance was `r raw %>% filter(mission_name == "J") %>% pull(sa_reported) %>% max()` when a typical week would be `r raw %>% filter(mission_name == "J") %>% pull(sa_reported) %>% mean() %>% round()`. Again it may be worth a quick call or email to the mission president to confirm the blessed nature of such an event.
+
 
 ```{r outliers1, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -107,6 +134,62 @@ raw %>%
     labs(x = "", y = "")
 ```
 
+
+
+## Visualizations
+
+#### Trelliscope
+
+Like Tableau, trelliscope is one R package that enables the viewer to interact visually with the data. Because trelliscope is built for use in R, we can leverage other important tools to mimic Tableau's interactivity and go well beyond Tableau's limits by moving visually through various slices of the data using features (cognostics) derived directly from the data. The example below should help illustrate the advantages of such an approach, thus enabling the viewer to observe the data in ways they can't easily reach using other BI tools, like Tableau.
+
+
+```{r trelliscopeMetrics, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+byMetric <- raw %>% 
+  mutate(Date = mdy(week_mon_sun_end_date),
+        `Young Missionaries` = elders + sisters,
+        `Total Missionaries` = elders + sisters + seniors) %>%
+  group_by(mission_name, mission_president, Date) %>%
+  mutate(`Percent of Goal - New Investigators` = ni_reported / ni_goal,
+         `Percent of Goal - Sacrament Attendance` = sa_reported / sa_goal,
+         `Percent of Goal - Baptism Date Set` = bd_reported / bd_goal,
+         `Percent of Goal - Baptism/Confirmation` = bc_reported / bc_goal,
+         `New Investigators per Missionary` = ni_reported / `Total Missionaries`,
+         `Sacrament Attendance per Missionary` = sa_reported / `Total Missionaries`,
+         `Baptism Date Set per Missionary` = bd_reported / `Total Missionaries`,
+         `Baptism/Confirmation per Missionary` = bc_reported / `Total Missionaries`) %>%
+  rename(`New Investigators` = ni_reported,
+         `Sacrament Attendance` = sa_reported,
+         `Baptism Date Set` = bd_reported,
+         `Baptism/Confirmation` = bc_reported,
+         `New Investigators (Goal)` = ni_goal,
+         `Sacrament Attendance (Goal)` = sa_goal,
+         `Baptism Date Set (Goal)` = bd_goal,
+         `Baptism/Confirmation (Goal)` = bc_goal,
+         Elders = elders,
+         Sisters = sisters,
+         Seniors = seniors) %>%
+  gather("metric", "value", 
+         `Elders`, `Sisters`, `Seniors`, `Young Missionaries`, `Total Missionaries`,
+         `New Investigators`, `Sacrament Attendance`, `Baptism Date Set`, `Baptism/Confirmation`,
+         `New Investigators per Missionary`, `Sacrament Attendance per Missionary`, 
+         `Baptism Date Set per Missionary`, `Baptism/Confirmation per Missionary`,
+         `New Investigators (Goal)`, `Sacrament Attendance (Goal)`, `Baptism Date Set (Goal)`, `Baptism/Confirmation (Goal)`,
+         `Percent of Goal - New Investigators`, `Percent of Goal - Sacrament Attendance`,
+         `Percent of Goal - Baptism Date Set`, `Percent of Goal - Baptism/Confirmation`)
+
+byMetric %>%
+  group_by(mission_name, metric) %>%
+  nest() %>%
+  mutate(panel = map_plot(data,
+    ~ figure() %>%
+      ly_points(x = Date, y = value, color = mission_president, 
+                hover = list(`Mission President` = mission_president,
+                             `Date` = Date,
+                             `Value` = value),
+                data = .x))) %>%
+  trelliscope(name = "metric by mission", self_contained = T)
+
+```    
 
 
 Quote from *Preach My Gospel* about goals and how that influenced my suggestions regarding mission goals
