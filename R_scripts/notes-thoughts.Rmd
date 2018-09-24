@@ -1,5 +1,5 @@
 ---
-title: "Notes"
+title: "Missionary Data Scientist Interview Notes"
 author: "Trenton Pulsipher"
 date: "9/20/2018"
 output: html_document
@@ -17,8 +17,19 @@ raw <- read_csv("~/Documents/Development/R/data/missionaryInterview/KI_17SEP2018
 
 ## Observations/Thoughts
 
-#### Mission President Effect
+### Data Discovery
 
+Each new dataset provided requires a simple, quick, but nearly exhaustive data discovery analysis. Visualization is usually the best method for such an endeavor. The goal of the initial data discovery phase would be to:
+
+ - identify outliers or extreme behavior,
+ - observe general trends,
+ - assess assumptions for statistical modeling, and
+ - provide an easy method to collect documentation and defintions of the data.
+
+Sections below show some quick observations, which seemlessly become initial documentation of the dataset. This document required 6 hours of work, but should be the building block of developing a framework for reproducible initial investigation of similar datasets.
+
+
+#### Mission President Effect
 
 ##### New Investigators
 
@@ -40,7 +51,7 @@ raw %>%
           title = "Weekly Number of New Investigators by Mission")
 ```
 
-However we should confirm that the mission president effect isn't overly influenced/confounded by the number of missionaries. The plot below confirms that the mission president has a potentially strong effect on the number of new investigators within a mission.
+However we should confirm that the mission president effect isn't overly influenced/confounded by the number of missionaries. The plot below confirms that the mission president has a potentially strong effect on the number of new investigators within a mission even after accounting for the number of missionaries.
 
 ```{r missionPresEffect2, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -62,7 +73,7 @@ raw %>%
 
 ##### Baptisms/Confirmations
 
-Again a mission president effect is observed.
+While new investigators represent the top of the funnel, baptisms/confirmations (the bottom of the funnel) also show a mission president effect.
 
 ```{r missionPresEffect3, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -83,7 +94,7 @@ raw %>%
 
 ##### Sacrament Meeting Attendance
 
-While I was skeptical of any mission president effect on sacrament meeting attendance it appears such an effect is real.
+Just to be thorough, while skeptical of a mission president effect on sacrament meeting attendance it appears that such an effect is real.
 
 ```{r missionPresEffect4, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -102,16 +113,20 @@ raw %>%
           title = "Weekly Sacrament Meeting Attendance per Missionary by Mission")
 ```
 
+
 #### Data Cleaning/Correcting Opportunities
 
 ##### Potential Outliers 
 
-Outliers are possible and we would want to be careful about their effect on predictions/goals. Outliers I noticed include:
+Outliers are possible and we would want to be careful about their effect on predictions/goals. Potential outliers identified include:
 
-- Mission Q has one week where Baptisms/Confirmations spike to 75 when the next highest week was 16. (Maybe the 75 is supposed to be 15?) Because this field can be verified (compare MSR's number to any self-reported numbers) I would hesitate to change it here.
-- Mission K has an abnormal spike in New Investigators (1137 on 2010-02-11, note the next highest week was 428). This may be real, but if concerned about it's effect on modeling or otherwise I would consider replacing it with the mean or the previous week's value.
+- Mission Q has one week where Baptisms/Confirmations spike to 75 when the next highest week was 16. (Maybe the 75 is supposed to be 15?) Because this field can be verified (compare MSR's number to any self-reported numbers) I would hesitated to change it here but did so to the previous week's value of 2.
+- Mission K has an abnormal spike in New Investigators (1137 on 2010-02-11, note the next highest week was 428). This may be real, but if concerned about it's effect on modeling or otherwise I would consider replacing it with the mean or the previous week's value. On closer examination this appears to be a "fat finger" typo, likely it should have been reported as 113 or 117 (I chose to change it to 113).
 - Mission J recorded one week where sacrament meeting attendance was `r raw %>% filter(mission_name == "J") %>% pull(sa_reported) %>% max()` when a typical week would be `r raw %>% filter(mission_name == "J") %>% pull(sa_reported) %>% mean() %>% round()`. Again it may be worth a quick call or email to the mission president to confirm the blessed nature of such an event.
+    + Mission J also experienced a deep drop in new investigators the same week (2011-12-08) as the spike in sacrament meeting attendance. It appears likely those two numbers were incorrectly switched when reported.
+- Mission L had also saw a spike in sacrament meeting attendance, `r raw %>% filter(mission_name == "L") %>% pull(sa_reported) %>% max()` (average attendance is `r raw %>% filter(mission_name == "L") %>% pull(sa_reported) %>% mean() %>% round()`). This value was replaced with the previous week's attendance of 149.
 
+All identified potential outliers were removed for subsequent data processing and analysis. There are likely other outliers that require attention.
 
 ```{r outliers1, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -125,22 +140,82 @@ raw %>%
          `Baptism Date Set` = bd_reported,
          `Baptism/Confirmation` = bc_reported) %>%
   gather("metric", "value", `New Investigators`, `Sacrament Attendance`, `Baptism Date Set`, `Baptism/Confirmation`) %>%
+  # mutate(metric = factor(metric, levels = c(`New Investigators`, `Sacrament Attendance`, 
+  #                                           `Baptism Date Set`, `Baptism/Confirmation`))) %>%
   ggplot(aes(x = Date, y = value, group = mission_name)) +
     geom_line() +
     geom_smooth(method = "loess") +
     theme_bw() +
     facet_grid(metric ~ mission_name, scales = "free_y") +
     theme(legend.position = "none") +
-    labs(x = "", y = "")
+    labs(x = "", y = "") 
 ```
 
+
+#### Area Average 
+
+Knowing that all missions within an area are not homogeneous makes it difficult to make mission-to-mission comparisons. A simple comparison though could be made between each mission and the area average. While one might prefer to compare the mission to it's historical behavior/average, comparison to the area average accounts for some general or seasonal trending and helps appropriately illustrate mission-to-mission variability. 
+
+One may wish to smooth out the area averages (likely using a moving average) to assure that inherent variability doesn't distract the analyst/viewer from observing the general trend, which was not done here.
+
+```{r areaAvgCalc, error = F, message = F, warning = F, echo = F}
+
+# fix the Mission J outliers #
+jBad1 <- raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "ni_reported"]
+jBad2 <- raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "sa_reported"]
+
+raw[raw$mission_name == "Q" & raw$week_mon_sun_end_date == "2/9/2012", "bc_reported"] <- 2
+raw[raw$mission_name == "K" & raw$week_mon_sun_end_date == "2/11/2010", "ni_reported"] <- 113
+raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "ni_reported"] <- jBad2
+raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "sa_reported"] <- jBad1
+raw[raw$mission_name == "L" & raw$week_mon_sun_end_date == "7/19/2007", "sa_reported"] <- 149    
+
+areaAvg <- raw %>% 
+  mutate(Date = mdy(week_mon_sun_end_date),
+        `Young Missionaries` = elders + sisters,
+        `Total Missionaries` = elders + sisters + seniors) %>%
+  group_by(mission_name, mission_president, Date) %>%
+  mutate(`Percent of Goal - New Investigators` = ni_reported / ni_goal,
+         `Percent of Goal - Sacrament Attendance` = sa_reported / sa_goal,
+         `Percent of Goal - Baptism Date Set` = bd_reported / bd_goal,
+         `Percent of Goal - Baptism/Confirmation` = bc_reported / bc_goal,
+         `New Investigators per Missionary` = ni_reported / `Total Missionaries`,
+         `Sacrament Attendance per Missionary` = sa_reported / `Total Missionaries`,
+         `Baptism Date Set per Missionary` = bd_reported / `Total Missionaries`,
+         `Baptism/Confirmation per Missionary` = bc_reported / `Total Missionaries`) %>%
+  rename(`New Investigators` = ni_reported,
+         `Sacrament Attendance` = sa_reported,
+         `Baptism Date Set` = bd_reported,
+         `Baptism/Confirmation` = bc_reported,
+         `New Investigators (Goal)` = ni_goal,
+         `Sacrament Attendance (Goal)` = sa_goal,
+         `Baptism Date Set (Goal)` = bd_goal,
+         `Baptism/Confirmation (Goal)` = bc_goal,
+         Elders = elders,
+         Sisters = sisters,
+         Seniors = seniors) %>%
+  group_by(Date) %>%
+  select(-mission_name, -mission_president, -week_mon_sun_end_date) %>%
+  gather("metric", "value", 
+         `Elders`, `Sisters`, `Seniors`, `Young Missionaries`, `Total Missionaries`,
+         `New Investigators`, `Sacrament Attendance`, `Baptism Date Set`, `Baptism/Confirmation`,
+         `New Investigators per Missionary`, `Sacrament Attendance per Missionary`, 
+         `Baptism Date Set per Missionary`, `Baptism/Confirmation per Missionary`,
+         `New Investigators (Goal)`, `Sacrament Attendance (Goal)`, `Baptism Date Set (Goal)`, `Baptism/Confirmation (Goal)`,
+         `Percent of Goal - New Investigators`, `Percent of Goal - Sacrament Attendance`,
+         `Percent of Goal - Baptism Date Set`, `Percent of Goal - Baptism/Confirmation`) %>%
+  group_by(Date, metric) %>%
+  summarise(AreaAvg = mean(value, na.rm = T))
+
+
+```
 
 
 ## Visualizations
 
 #### Trelliscope
 
-Like Tableau, trelliscope is one R package that enables the viewer to interact visually with the data. Because trelliscope is built for use in R, we can leverage other important tools to mimic Tableau's interactivity and go well beyond Tableau's limits by moving visually through various slices of the data using features (cognostics) derived directly from the data. The example below should help illustrate the advantages of such an approach, thus enabling the viewer to observe the data in ways they can't easily reach using other BI tools, like Tableau.
+Trelliscope is a R package that like Tableau enables the audience to interact visually with the data. Because trelliscope is built for use in R, we can leverage other important tools to mimic Tableau's interactivity (in this case a JavaScript vis library called bokeh) and go well beyond Tableau's limits by moving visually through various slices of the data using features derived directly from the data. The example below should help illustrate the advantages of such an approach, thus enabling the analyst to observe the data in ways not easily obtained using other business intelligence (BI) tools. BI reporting tools, e.g. Tableau and Business Objects, can then be leveraged for customized reporting based on the outcomes/results/observations generated via the interactive analysis.
 
 
 ```{r trelliscopeMetrics, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
@@ -178,20 +253,55 @@ byMetric <- raw %>%
          `Percent of Goal - Baptism Date Set`, `Percent of Goal - Baptism/Confirmation`)
 
 byMetric %>%
+  left_join(areaAvg %>%
+              filter(is.finite(AreaAvg)), 
+            by = c("Date", "metric")) %>%
   group_by(mission_name, metric) %>%
+  filter(mission_name %in% c("A", "B")) %>%
+  rename(Pres = mission_president) %>%
   nest() %>%
-  mutate(panel = map_plot(data,
-    ~ figure() %>%
-      ly_points(x = Date, y = value, color = mission_president, 
-                hover = list(`Mission President` = mission_president,
-                             `Date` = Date,
-                             `Value` = value),
-                data = .x))) %>%
+  mutate(
+    # summaryStats = map_cog(data, ~ data_frame(
+    #   mean = cog(mean(.x$value, na.rm = T), desc = "weekly avg"),
+    #   median = cog(mean(.x$value, na.rm = T), desc = "weekly median"),
+    #   stdDev = cog(sd(.x$value, na.rm = T), desc = "weekly standard deviation"),
+    #   cv = cog(sd(.x$value, na.rm = T) / mean(.x$value, na.rm = T), desc = "weekly cv or sd/mean"))),
+    panel = map_plot(data,
+                     ~ figure(xlab = "", ylab = "") %>%
+                       ly_points(x = Date, y = value, color = Pres, #mission_president, 
+                                 hover = list(`Mission President` = Pres, #mission_president,
+                                              `Date` = Date,
+                                              `Value` = value),
+                                 data = .x,
+                                 legend = F) %>% 
+                      ly_lines(x = Date, y = AreaAvg,
+                               hover = list(`Date` = Date, 
+                                            `Area Avg` = AreaAvg),
+                                 data = .x, 
+                                 legend = F))) %>%
   trelliscope(name = "metric by mission", self_contained = T)
 
 ```    
 
 
-Quote from *Preach My Gospel* about goals and how that influenced my suggestions regarding mission goals
+## Conclusions/Suggestions
 
-Incorporate a machine learning model or time-series model for prediction.
+The four metrics provided in the data were used to calculate additional metrics adjusting for the number of missionaries and comparing the aggregated (area) average. These additional considerations allow for more comparison of a mission's metrics rather than only make historical comparisons to oneself. Interpretation and summarization of these visualizations requires an additional commitment to truly understand the story of each mission and to set appropriate goals/expectations. 
+
+
+#### Goals
+
+Elder Ballard said in his April 2017 general conference address: 
+
+>"Over the years, I have observed that those who accomplish the most in this world are those with a vision for their lives, with goals to keep them focused on their vision and tactical plans for how to achieve them. Knowing where you are going and how you expect to get there can bring meaning, purpose, and accomplishment to life."
+
+He followed that with: 
+
+>"Goal setting is essentially beginning with the end in mind. A key to happiness lies in understanding what destinations truly matter—and then spending our time, effort, and attention on the things that constitute a sure way to arrive there."
+
+and with:
+
+>"Experts on goal setting tell us that the simpler and more straightforward a goal is, the more power it will have. When we can reduce a goal to one clear image or one or two powerful and symbolic words, that goal can then become part of us and guide virtually everything we think and do."
+
+Based on those comments I feel conflicted personally on goal setting for missions. One could produce some sophisticated time-series statistical/machine learning modeling to both predict mission key indicators and to generate goals for each mission. My experience as a data scientist puts me in that camp, realizing I would need to learn more about the overall goals and expectations for mission presidents, missionaries, and their experience.
+
