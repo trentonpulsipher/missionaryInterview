@@ -1,0 +1,176 @@
+---
+title: "Mission President Performance"
+author: "Trenton Pulsipher"
+date: "9/25/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(trelliscopejs)
+library(rbokeh)
+
+raw <- read_csv("~/Documents/Development/R/data/missionaryInterview/KI_17SEP2018.csv") %>%
+  as.tibble()
+```
+
+
+```{r areaAvgCalc, error = F, message = F, warning = F, echo = F}
+
+# fix the Mission J outliers #
+jBad1 <- raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "ni_reported"]
+jBad2 <- raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "sa_reported"]
+
+raw[raw$mission_name == "Q" & raw$week_mon_sun_end_date == "2/9/2012", "bc_reported"] <- 2
+raw[raw$mission_name == "K" & raw$week_mon_sun_end_date == "2/11/2010", "ni_reported"] <- 113
+raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "ni_reported"] <- jBad2
+raw[raw$mission_name == "J" & raw$week_mon_sun_end_date == "12/8/2011", "sa_reported"] <- jBad1
+raw[raw$mission_name == "L" & raw$week_mon_sun_end_date == "7/19/2007", "sa_reported"] <- 149    
+
+areaAvg <- raw %>% 
+  mutate(Date = mdy(week_mon_sun_end_date),
+        `Young Missionaries` = elders + sisters,
+        `Total Missionaries` = elders + sisters + seniors) %>%
+  group_by(mission_name, mission_president, Date) %>%
+  mutate(`Percent of Goal - New Investigators` = ni_reported / ni_goal,
+         `Percent of Goal - Sacrament Attendance` = sa_reported / sa_goal,
+         `Percent of Goal - Baptism Date Set` = bd_reported / bd_goal,
+         `Percent of Goal - Baptism/Confirmation` = bc_reported / bc_goal,
+         `New Investigators per Missionary` = ni_reported / `Total Missionaries`,
+         `Sacrament Attendance per Missionary` = sa_reported / `Total Missionaries`,
+         `Baptism Date Set per Missionary` = bd_reported / `Total Missionaries`,
+         `Baptism/Confirmation per Missionary` = bc_reported / `Total Missionaries`) %>%
+  rename(`New Investigators` = ni_reported,
+         `Sacrament Attendance` = sa_reported,
+         `Baptism Date Set` = bd_reported,
+         `Baptism/Confirmation` = bc_reported,
+         `New Investigators (Goal)` = ni_goal,
+         `Sacrament Attendance (Goal)` = sa_goal,
+         `Baptism Date Set (Goal)` = bd_goal,
+         `Baptism/Confirmation (Goal)` = bc_goal,
+         Elders = elders,
+         Sisters = sisters,
+         Seniors = seniors) %>%
+  group_by(Date) %>%
+  select(-mission_name, -mission_president, -week_mon_sun_end_date) %>%
+  gather("metric", "value", 
+         `Elders`, `Sisters`, `Seniors`, `Young Missionaries`, `Total Missionaries`,
+         `New Investigators`, `Sacrament Attendance`, `Baptism Date Set`, `Baptism/Confirmation`,
+         `New Investigators per Missionary`, `Sacrament Attendance per Missionary`, 
+         `Baptism Date Set per Missionary`, `Baptism/Confirmation per Missionary`,
+         `New Investigators (Goal)`, `Sacrament Attendance (Goal)`, `Baptism Date Set (Goal)`, `Baptism/Confirmation (Goal)`,
+         `Percent of Goal - New Investigators`, `Percent of Goal - Sacrament Attendance`,
+         `Percent of Goal - Baptism Date Set`, `Percent of Goal - Baptism/Confirmation`) %>%
+  group_by(Date, metric) %>%
+  summarise(AreaAvg = mean(value, na.rm = T))
+
+```
+
+Key Performance Indicators (KPIs) for each mission over time are shown below. Mission presidents are represented as a different color and hovering over each week's KPI point shows any detail regarding the data. Use the tool to quickly sort and filter to see the desired KPI and order of missions based on that KPI or other information.
+
+#### KPIs
+
+KPIs available for viewing here include:
+
+* New Investigators
+* Sacrament Attendance
+* Baptism Date Set
+* Baptism/Confirmation
+
+The four KPIs adjusted for the number of missionaries:
+
+* New Investigators per Missionary
+* Sacrament Attendance per Missionary
+* Baptism Date Set per Missionary
+* Baptism/Confirmation per Missionary
+
+Weekly mission goals:
+
+* New Investigators (Goal)
+* Sacrament Attendance (Goal)
+* Baptism Date Set (Goal)
+* Baptism/Confirmation (Goal)
+
+Percent of mission goal attained:
+
+* Percent of Goal - New Investigators
+* Percent of Goal - Sacrament Attendance
+* Percent of Goal - Baptism Date Set
+* Percent of Goal - Baptism/Confirmation`
+
+Number of missionaries per mission:
+
+* Elders
+* Sisters
+* Seniors
+* Young Missionaries (Elders + Sisters)
+* Total Missionaries (Elders + Sisters + Seniors)
+
+
+```{r missionPresEffect, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
+
+byMetric <- raw %>% 
+  mutate(Date = mdy(week_mon_sun_end_date),
+        `Young Missionaries` = elders + sisters,
+        `Total Missionaries` = elders + sisters + seniors) %>%
+  group_by(mission_name, mission_president, Date) %>%
+  mutate(`Percent of Goal - New Investigators` = ni_reported / ni_goal,
+         `Percent of Goal - Sacrament Attendance` = sa_reported / sa_goal,
+         `Percent of Goal - Baptism Date Set` = bd_reported / bd_goal,
+         `Percent of Goal - Baptism/Confirmation` = bc_reported / bc_goal,
+         `New Investigators per Missionary` = ni_reported / `Total Missionaries`,
+         `Sacrament Attendance per Missionary` = sa_reported / `Total Missionaries`,
+         `Baptism Date Set per Missionary` = bd_reported / `Total Missionaries`,
+         `Baptism/Confirmation per Missionary` = bc_reported / `Total Missionaries`) %>%
+  rename(`New Investigators` = ni_reported,
+         `Sacrament Attendance` = sa_reported,
+         `Baptism Date Set` = bd_reported,
+         `Baptism/Confirmation` = bc_reported,
+         `New Investigators (Goal)` = ni_goal,
+         `Sacrament Attendance (Goal)` = sa_goal,
+         `Baptism Date Set (Goal)` = bd_goal,
+         `Baptism/Confirmation (Goal)` = bc_goal,
+         Elders = elders,
+         Sisters = sisters,
+         Seniors = seniors) %>%
+  gather("metric", "value", 
+         `Elders`, `Sisters`, `Seniors`, `Young Missionaries`, `Total Missionaries`,
+         `New Investigators`, `Sacrament Attendance`, `Baptism Date Set`, `Baptism/Confirmation`,
+         `New Investigators per Missionary`, `Sacrament Attendance per Missionary`, 
+         `Baptism Date Set per Missionary`, `Baptism/Confirmation per Missionary`,
+         `New Investigators (Goal)`, `Sacrament Attendance (Goal)`, `Baptism Date Set (Goal)`, `Baptism/Confirmation (Goal)`,
+         `Percent of Goal - New Investigators`, `Percent of Goal - Sacrament Attendance`,
+         `Percent of Goal - Baptism Date Set`, `Percent of Goal - Baptism/Confirmation`)
+
+byMetric %>%
+  left_join(areaAvg %>%
+              filter(is.finite(AreaAvg)), 
+            by = c("Date", "metric")) %>%
+  group_by(mission_name, metric) %>%
+#  filter(mission_name %in% c("A", "B")) %>%
+  rename(Pres = mission_president) %>%
+  nest() %>%
+  mutate(
+    summaryStats = map_cog(data, ~ data_frame(
+      mean = cog(mean(.x$value, na.rm = T), desc = "weekly avg"),
+      median = cog(mean(.x$value, na.rm = T), desc = "weekly median"),
+      stdDev = cog(sd(.x$value, na.rm = T), desc = "weekly standard deviation"),
+      cv = cog(sd(.x$value, na.rm = T) / mean(.x$value, na.rm = T), desc = "weekly cv or sd/mean"))),
+    panel = map_plot(data,
+                     ~ figure(xlab = "", ylab = "") %>%
+                       ly_points(x = Date, y = value, color = Pres, #mission_president, 
+                                 hover = list(`Mission President` = Pres, #mission_president,
+                                              `Date` = Date,
+                                              metric = value),
+                                 data = .x,
+                                 legend = F) %>% 
+                       ly_lines(x = Date, y = AreaAvg,
+                                hover = list(`Date` = Date, 
+                                            `Area Avg` = AreaAvg),
+                                data = .x, 
+                                legend = F))) %>%
+  trelliscope(name = "KPIs by Mission", self_contained = T)
+
+```
+

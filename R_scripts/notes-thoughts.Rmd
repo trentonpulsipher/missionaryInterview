@@ -126,7 +126,7 @@ Outliers are possible and we would want to be careful about their effect on pred
     + Mission J also experienced a deep drop in new investigators the same week (2011-12-08) as the spike in sacrament meeting attendance. It appears likely those two numbers were incorrectly switched when reported.
 - Mission L had also saw a spike in sacrament meeting attendance, `r raw %>% filter(mission_name == "L") %>% pull(sa_reported) %>% max()` (average attendance is `r raw %>% filter(mission_name == "L") %>% pull(sa_reported) %>% mean() %>% round()`). This value was replaced with the previous week's attendance of 149.
 
-All identified potential outliers were removed for subsequent data processing and analysis. There are likely other outliers that require attention.
+All identified potential outliers were removed for subsequent data processing and analysis. There are likely other less obvious outliers that require attention.
 
 ```{r outliers1, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -150,6 +150,8 @@ raw %>%
     theme(legend.position = "none") +
     labs(x = "", y = "") 
 ```
+
+I failed to correct any outliers in the "goal" KPIs which definitely affect the area average calculations below.
 
 
 #### Area Average 
@@ -257,7 +259,7 @@ byMetric %>%
               filter(is.finite(AreaAvg)), 
             by = c("Date", "metric")) %>%
   group_by(mission_name, metric) %>%
-  filter(mission_name %in% c("A", "B")) %>%
+  # filter(mission_name %in% c("A", "B")) %>%
   rename(Pres = mission_president) %>%
   nest() %>%
   mutate(
