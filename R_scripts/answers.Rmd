@@ -13,7 +13,7 @@ This document captures my feeble attempt to address the interview data questions
 
 ## Questions
 
-##### 1. A director in the missionary department has asked the analytics team to produce suggested key indicator goals for a specific area and missions. Using the attached dataset determine how you might suggest approaching the best key indicator goals for these missions. Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
+#### 1. A director in the missionary department has asked the analytics team to produce suggested key indicator goals for a specific area and missions. Using the attached dataset determine how you might suggest approaching the best key indicator goals for these missions. Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
 
 Approaches: I propose three options here, starting from simpliest to more complex. 
   
@@ -28,21 +28,21 @@ Another approach may involve an overall score for each mission (think of it as a
 Notes: I struggled with this a little. Elder Ballard maintains goals should be simple and straightforward (see [goals section of my documentation](notes-thoughts.html)), which may be difficult to demonstrate when leveraging a data driven approach. Sophistication in the model or approach is often unnessary, however, I personally would want to try all three proposed approaches to some extent for comparison (or other proposals). 
 
 
-##### 2. How would you assess the performance of these missions? Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
+#### 2. How would you assess the performance of these missions? Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
 
 I feel my [initial assessment](notes-thoughts.html) covers my approach to evaluating mission performance. For department internal purposes a scorecard or report highlighting the various KPIs could be calculated allowing for quick discovery of which missions may benefit from additional attention, training, or intervention. Tableau, or other BI tools, facilitate data discovery via both summary and drillable detailed information. Such dashboards likely provide a sufficient medium to share performance related reporting.
 
 One could include a table of performance assessment by Mission and KPI. Performance assessment isn't always simple given the nature of changing mission presidents, the number of missionaries, mission boundaries, and other factors (age change, more sisters, local events/politics). Often a mission is exceeding expectations and their goals demonstrated by their extremely high reported KPIs. However that mission may not be following some important part of the process (maybe they haven't sufficiently prepared their investigators for long-term membership and covenant keeping). A correction in both mission practices and the data may follow leading to lower performance but more appropriate scores/KPIs. I believe there are ways to both monitor and evaluate mission KPIs that encourage appropriate behavior/teaching. 
 
 
-##### 3. How would you assess the performance of these mission presidents? Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
+#### 3. How would you assess the performance of these mission presidents? Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
 
 If changes in mission presidents were the only thing changing in missions then addressing mission president performance would be easy. Even with so many other changes, solutions are possible. Exceptions exist and major swings in KPIs aren't always as good or as bad as intially perceived sometimes making sweeping conclusions incorrect and basic analysis insufficient. Otherwise some simple historical analysis to determine a general baseline would help establish performance and goals for each mission president. Again I would look to the standard (already produced) Key Indicator Report to address their performance and adjust any assessment if needed based on previous mission president's KPI behaviors.
 
 A more complete response to this question is found [here](missionPresidentPerformance.html).
 
 
-##### 4. How would you assess the effect of missionary count on key indicators? Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
+#### 4. How would you assess the effect of missionary count on key indicators? Share your code (R, Python, or Julia) as well as an executive summary (how would you present this to a director).
 
 I tried to address this request/question as part of all the other questions. KPIs adjusted for the number of missionaries should be part of the standard reporting process. Evaluation otherwise will always be overshadowed by slight (or significant) fluctuations in the number of missionaries. While not reported explicitly, internally it seems important to monior the effect of young sister missionaries and senior missionaries on KPIs by mission. Adjusting for the number of missionaries also helps illustrate the "missionary experience", giving leadership a better understanding of the accomplishments and overall experience of the missionaries.
 
