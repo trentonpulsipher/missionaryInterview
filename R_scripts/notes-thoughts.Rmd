@@ -1,7 +1,7 @@
 ---
 title: "Missionary Data Scientist Interview Notes"
 author: "Trenton Pulsipher"
-date: "9/20/2018"
+date: "`r lubridate::today()`"
 output: html_document
 ---
 
@@ -17,9 +17,11 @@ raw <- read_csv("~/Documents/Development/R/data/missionaryInterview/KI_17SEP2018
 
 ## Observations/Thoughts
 
+This document represents my typical approach when receiving a new dataset. I believe in meticulous documentation and exhaustive analysis. I understand in the missionary department often the questions asked require quick responses and that both documentation and in-depth analysis become afterthoughts (though I do remember Matt being very organized and great at saving our work in a well documented manner). I have asked the data science intern I mentor/host to pursue the creation of a R packag to semi-automatically generate documentation following the pattern observed below. 
+
 ### Data Discovery
 
-Each new dataset provided requires a simple, quick, but nearly exhaustive data discovery analysis. Visualization is usually the best method for such an endeavor. The goal of the initial data discovery phase would be to:
+Each new dataset provided an analyst requires a simple, quick, but nearly exhaustive data discovery analysis. Visualization is usually the best method for such an endeavor. The goal of the initial data discovery phase would be to:
 
  - identify outliers or extreme behavior,
  - observe general trends,
@@ -94,7 +96,7 @@ raw %>%
 
 ##### Sacrament Meeting Attendance
 
-Just to be thorough, while skeptical of a mission president effect on sacrament meeting attendance it appears that such an effect is real.
+Just to be thorough, while skeptical of a mission president effect on sacrament meeting attendance it appears that such an effect is real. It seems any analysis of missionary data will require attention be paid to a potential mission president effect.
 
 ```{r missionPresEffect4, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
 raw %>% 
@@ -118,7 +120,7 @@ raw %>%
 
 ##### Potential Outliers 
 
-Outliers are possible and we would want to be careful about their effect on predictions/goals. Potential outliers identified include:
+Outliers are possible and we would want to be careful about their effect on predictions/goals. Potential outliers identified here include:
 
 - Mission Q has one week where Baptisms/Confirmations spike to 75 when the next highest week was 16. (Maybe the 75 is supposed to be 15?) Because this field can be verified (compare MSR's number to any self-reported numbers) I would hesitated to change it here but did so to the previous week's value of 2.
 - Mission K has an abnormal spike in New Investigators (1137 on 2010-02-11, note the next highest week was 428). This may be real, but if concerned about it's effect on modeling or otherwise I would consider replacing it with the mean or the previous week's value. On closer examination this appears to be a "fat finger" typo, likely it should have been reported as 113 or 117 (I chose to change it to 113).
@@ -156,7 +158,7 @@ I failed to correct any outliers in the "goal" KPIs which definitely affect the 
 
 #### Area Average 
 
-Knowing that all missions within an area are not homogeneous makes it difficult to make mission-to-mission comparisons. A simple comparison though could be made between each mission and the area average. While one might prefer to compare the mission to it's historical behavior/average, comparison to the area average accounts for some general or seasonal trending and helps appropriately illustrate mission-to-mission variability. 
+Knowing that all missions within an area are not homogeneous makes it difficult to make mission-to-mission comparisons. A simple comparison though could be made between each mission and the area average, though that may not always be appropriate. While one might prefer to compare the mission to it's historical behavior/average, comparison to the area average accounts for some general or seasonal trending and helps appropriately illustrate mission-to-mission variability. 
 
 One may wish to smooth out the area averages (likely using a moving average) to assure that inherent variability doesn't distract the analyst/viewer from observing the general trend, which was not done here.
 
@@ -215,9 +217,9 @@ areaAvg <- raw %>%
 
 ## Visualizations
 
-#### Trelliscope
+#### trelliscopejs
 
-Trelliscope is a R package that like Tableau enables the audience to interact visually with the data. Because trelliscope is built for use in R, we can leverage other important tools to mimic Tableau's interactivity (in this case a JavaScript vis library called bokeh) and go well beyond Tableau's limits by moving visually through various slices of the data using features derived directly from the data. The example below should help illustrate the advantages of such an approach, thus enabling the analyst to observe the data in ways not easily obtained using other business intelligence (BI) tools. BI reporting tools, e.g. Tableau and Business Objects, can then be leveraged for customized reporting based on the outcomes/results/observations generated via the interactive analysis.
+A quick introduction to trelliscopejs is necessary. Trelliscopejs is a R package that like Tableau enables the audience to interact visually with the data. Because trelliscopejs is built for use in R, we can leverage other important tools to mimic Tableau's interactivity (in this case a JavaScript vis library called bokeh) and go well beyond Tableau's limits by moving visually through various slices of the data using features derived directly from the data. The example below should help illustrate the advantages of such an approach, thus enabling the analyst to observe the data in ways not easily obtained using other business intelligence (BI) tools. BI reporting tools, e.g. Tableau and Business Objects, can then be leveraged for customized reporting based on the outcomes/results/observations generated via the interactive analysis.
 
 
 ```{r trelliscopeMetrics, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
@@ -305,5 +307,5 @@ and with:
 
 >"Experts on goal setting tell us that the simpler and more straightforward a goal is, the more power it will have. When we can reduce a goal to one clear image or one or two powerful and symbolic words, that goal can then become part of us and guide virtually everything we think and do."
 
-Based on those comments I feel conflicted personally on goal setting for missions. One could produce some sophisticated time-series statistical/machine learning modeling to both predict mission key indicators and to generate goals for each mission. My experience as a data scientist puts me in that camp, realizing I would need to learn more about the overall goals and expectations for mission presidents, missionaries, and their experience.
+Based on those comments I feel conflicted personally on goal setting for missions. One could definitely produce some sophisticated time-series statistical/machine learning modeling to both predict mission key indicators and to generate goals for each mission. My experience as a data scientist puts me in that camp, realizing I would need to learn more about the overall goals and expectations for mission presidents, missionaries, and their experience to make sure the data-driven approach is balanced with the principles and expectations of the leadership team.
 

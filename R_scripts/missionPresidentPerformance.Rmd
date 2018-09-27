@@ -1,7 +1,7 @@
 ---
 title: "Mission President Performance"
 author: "Trenton Pulsipher"
-date: "9/25/2018"
+date: "`r lubridate::today()`"
 output: html_document
 ---
 
@@ -67,45 +67,7 @@ areaAvg <- raw %>%
 
 ```
 
-Key Performance Indicators (KPIs) for each mission over time are shown below. Mission presidents are represented as a different color and hovering over each week's KPI point shows any detail regarding the data. Use the tool to quickly sort and filter to see the desired KPI and order of missions based on that KPI or other information.
-
-#### KPIs
-
-KPIs available for viewing here include:
-
-* New Investigators
-* Sacrament Attendance
-* Baptism Date Set
-* Baptism/Confirmation
-
-The four KPIs adjusted for the number of missionaries:
-
-* New Investigators per Missionary
-* Sacrament Attendance per Missionary
-* Baptism Date Set per Missionary
-* Baptism/Confirmation per Missionary
-
-Weekly mission goals:
-
-* New Investigators (Goal)
-* Sacrament Attendance (Goal)
-* Baptism Date Set (Goal)
-* Baptism/Confirmation (Goal)
-
-Percent of mission goal attained:
-
-* Percent of Goal - New Investigators
-* Percent of Goal - Sacrament Attendance
-* Percent of Goal - Baptism Date Set
-* Percent of Goal - Baptism/Confirmation`
-
-Number of missionaries per mission:
-
-* Elders
-* Sisters
-* Seniors
-* Young Missionaries (Elders + Sisters)
-* Total Missionaries (Elders + Sisters + Seniors)
+Key Performance Indicators (KPIs) for each mission over time are shown below. Mission presidents are represented as a different color and hovering over each week's KPI point in the plot shows detail regarding the data. Mission health monitoring can help identify when a mission has the chills (KPIs too low compared to historical averages or area average) or a fever (KPIs too high prompting a different kind of concern and opportunity for training). KPIs are listed below the plots and summary for convenience.
 
 
 ```{r missionPresEffect, error = F, message = F, warning = F, echo = F, fig.height = 6, fig.width = 9}
@@ -174,3 +136,60 @@ byMetric %>%
 
 ```
 
+### Summary of Findings
+
+Ideally something like a summary table auto-generated to indicate mission health would be shared internally and possibly with area presidencies regularly. Below are some of my quick observations that give a flavor as to what could be provided in such a table. Comments here reflect only a portion of the missions and only a few KPIs.
+
+- Mission A: only baptisms appear near the area average, mission president effect is very low
+- Mission B: all KPIs are generally lower than area average, strong mission president effect, recent improvements made by current mission president
+- Mission C: high variability in new investigators and baptism date set KPIs, generally at or below area average, mission president effect observed on all KPIs except baptisms
+- Mission H: new investigators KPI is very positive, generally at or above area average on all KPIs, weak mission president effect
+- Mission I: strong mission president effect observed, KPIs appear above area average, recent correction of KPIs observed, overall a very interesting and somewhat unique KPI profile
+- Mission K: KPIs appear at or above area average, baptisms seem consistent but the other KPIs show a strong mission president effect
+
+This was not an exhaustive analysis and should have been developed into a more comprehensive and cohesive table of results. Ideally those results would like directly to a visualization of the summarized content.
+
+
+#### KPIs
+
+KPIs available for viewing here include:
+
+* New Investigators
+* Sacrament Attendance
+* Baptism Date Set
+* Baptism/Confirmation
+
+The four KPIs adjusted for the number of missionaries:
+
+* New Investigators per Missionary
+* Sacrament Attendance per Missionary
+* Baptism Date Set per Missionary
+* Baptism/Confirmation per Missionary
+
+Weekly mission goals:
+
+* New Investigators (Goal)
+* Sacrament Attendance (Goal)
+* Baptism Date Set (Goal)
+* Baptism/Confirmation (Goal)
+
+Percent of mission goal attained:
+
+* Percent of Goal - New Investigators
+* Percent of Goal - Sacrament Attendance
+* Percent of Goal - Baptism Date Set
+* Percent of Goal - Baptism/Confirmation`
+
+Number of missionaries per mission:
+
+* Elders
+* Sisters
+* Seniors
+* Young Missionaries (Elders + Sisters)
+* Total Missionaries (Elders + Sisters + Seniors)
+
+Conversion Efficiency (not included in this analysis): 
+
+* New Investigators / Baptism/Confirmation
+* Sacrament Attendance / Baptism/Confirmation
+* Baptism Date Set / Baptism/Confirmation
